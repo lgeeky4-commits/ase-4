@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#650000">
+  <title>Crimson Chat</title>
+  <link rel="stylesheet" href="/style.css">
+  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <section id="joinScreen" class="join-screen">
+      <div class="join-header">CRIMSON CHAT</div>
+      <div class="join-card">
+        <div class="join-caption">THREE PERSON NETWORK</div>
+        <h1>join chat</h1>
+        <p>Enter your name to access the public and private chats.</p>
+        <form id="joinForm">
+          <label for="nameInput">name</label>
+          <input id="nameInput" name="name" maxlength="20" minlength="2" autocomplete="nickname" placeholder="your name" required>
+          <button type="submit">enter</button>
+        </form>
+        <p class="join-status" id="slotText">0 / 3 people online</p>
+        <p id="joinError" class="join-error" role="alert"></p>
+      </div>
+    </section>
+
+    <section id="mainScreen" class="main-screen hidden" aria-label="Chat interface">
+      <header id="topbar" class="topbar">
+        <div id="publicNav" class="person-tabs" aria-label="Select a person">
+          <div id="usersNav" class="people-grid"></div>
+        </div>
+        <div id="privateNav" class="simple-header hidden">
+          <button id="backFromPrivate" class="back-button" type="button" aria-label="Back to public chat">←</button>
+          <span id="privateName" class="header-title">name</span>
+          <button id="privateLive" class="private-live hidden" type="button">● live • watch</button>
+        </div>
+        <div id="mapNav" class="simple-header hidden">
+          <button id="backFromMap" class="back-button" type="button" aria-label="Back to chat">←</button>
+          <span class="header-title">map</span>
+        </div>
+        <button id="mapOpen" class="map-open" aria-label="Open map" title="Open map" type="button"><span></span><span></span><span></span></button>
+      </header>
+
+      <section id="chatScreen" class="chat-screen">
+        <div id="chatPanel" class="chat-panel">
+          <div class="chat-live-bar"><button id="goLiveButton" type="button">● go live</button><span id="liveHint" aria-live="polite"></span></div>
+          <div id="messages" class="messages" role="log" aria-live="polite"></div>
+          <form id="messageForm" class="composer">
+            <button id="photoButton" class="photo-button" type="button" aria-label="Choose a photo" title="Send photo">▣</button>
+            <input id="photoInput" type="file" accept="image/*" hidden>
+            <input id="messageInput" type="text" autocomplete="off" maxlength="1500" aria-label="Type your message" placeholder="message" required>
+            <button type="submit" aria-label="Send message">➤</button>
+          </form>
+        </div>
+        <div id="chatStatus" class="chat-status">public chat</div>
+      </section>
+
+      <section id="mapScreen" class="map-screen hidden">
+        <div class="map-panel">
+          <div class="map-actions">
+            <button id="pinButton" type="button">mark area</button>
+            <button id="pathButton" type="button">path</button>
+          </div>
+          <div id="mapHelp" class="map-help">tap “mark area” or “path”</div>
+          <div id="mapCanvas" class="map-canvas" aria-label="Shared illustrated map image">
+            <img id="mapImage" src="/map-image.png" alt="Your cleaned-up map picture" draggable="false">
+            <svg id="mapLines" class="map-lines" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div id="mapPins" class="map-pins"></div>
+          </div>
+          <div id="draftActions" class="draft-actions hidden">
+            <span id="draftCount">0 points</span>
+            <button id="undoPoint" type="button">undo</button>
+            <button id="cancelDraft" type="button">cancel</button>
+            <button id="finishPath" type="button">finish</button>
+          </div>
+          <div class="map-list-head"><span id="mapVisibility">public map</span><span id="annotationCount">0 saved</span></div>
+          <div id="annotationList" class="annotation-list"></div>
+        </div>
+      </section>
+      <div id="connectionStatus" class="connection-status">connecting…</div>
+    </section>
+    <div class="ui-filter-dock">
+      <button id="filtersButton" class="ui-filters-toggle" type="button" aria-expanded="false" aria-controls="filtersPanel" title="Adjust the entire interface">filters</button>
+    </div>
+          <div id="filtersPanel" class="filters-panel hidden" aria-label="Entire interface filters">
+            <div class="filters-heading">
+              <strong>screen filters</strong>
+              <button id="closeFilters" type="button" aria-label="Close screen filters">×</button>
+            </div>
+            <div class="filter-control">
+              <label for="gritSlider">grit <output id="gritValue" for="gritSlider">0%</output></label>
+              <input id="gritSlider" type="range" min="0" max="100" value="0" step="1">
+            </div>
+            <div class="filter-control">
+              <label for="contrastSlider">contrast <output id="contrastValue" for="contrastSlider">100%</output></label>
+              <input id="contrastSlider" type="range" min="50" max="200" value="100" step="1">
+            </div>
+            <div class="filter-control">
+              <label for="hueSlider">hue <output id="hueValue" for="hueSlider">0°</output></label>
+              <input id="hueSlider" type="range" min="0" max="360" value="0" step="1">
+            </div>
+            <div class="filter-control">
+              <label for="saturationSlider">saturation <output id="saturationValue" for="saturationSlider">100%</output></label>
+              <input id="saturationSlider" type="range" min="0" max="200" value="100" step="1">
+            </div>
+            <div class="filters-bottom"><button id="resetFilters" type="button">reset filters</button><span>whole interface • only your view</span></div>
+          </div>
+    <div id="uiGrainOverlay" class="ui-grit-overlay" aria-hidden="true"></div>
+  </main>
+
+  <dialog id="noteDialog" class="note-dialog">
+    <form id="noteForm" method="dialog">
+      <div id="noteTitle" class="note-title">marker message</div>
+      <label for="noteInput">text bubble</label>
+      <textarea id="noteInput" maxlength="240" rows="3" placeholder="type a note for this spot"></textarea>
+      <div class="note-actions">
+        <button id="cancelNote" type="button">cancel</button>
+        <button type="submit">save</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="photoDialog" class="media-dialog">
+    <div class="media-heading"><strong>send photo</strong><button id="closePhotoDialog" type="button">×</button></div>
+    <img id="photoPreview" class="photo-preview" alt="Photo preview">
+    <label for="photoCaption">message (optional)</label>
+    <input id="photoCaption" maxlength="200" placeholder="caption">
+    <div class="media-actions"><button id="cancelPhoto" type="button">cancel</button><button id="sendPhoto" type="button">send photo</button></div>
+  </dialog>
+  <dialog id="imageDialog" class="media-dialog">
+    <div class="media-heading"><strong id="imageTitle">photo</strong><button id="closeImageDialog" type="button">×</button></div>
+    <img id="imageFull" class="photo-full" alt="Enlarged chat photo">
+  </dialog>
+  <dialog id="liveDialog" class="media-dialog live-dialog">
+    <div class="media-heading"><strong id="liveTitle">live video</strong><button id="closeLiveDialog" type="button">×</button></div>
+    <video id="liveVideo" autoplay playsinline controls></video>
+    <p id="liveInfo" role="status">Select a live broadcast or start your camera.</p>
+    <label id="microphoneLabel" class="microphone-option"><input id="micEnabled" type="checkbox"> include microphone audio</label>
+    <div class="media-actions"><button id="startLive" type="button">start camera</button><button id="stopLive" class="hidden" type="button">stop broadcasting</button></div>
+  </dialog>
+  <div id="toast" class="toast hidden" role="status"></div>
+</body>
+</html>
